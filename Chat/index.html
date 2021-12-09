@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://kit.fontawesome.com/64d58efce2.js" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="style.css" />
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.4.1.min.js"></script>
     <title>Sign in & Sign up Form</title>
 </head>
 
@@ -16,14 +17,14 @@
                 <form action="#" class="sign-in-form">
                     <h2 class="title">Sign in</h2>
                     <div class="input-field">
-                        <i class="fas fa-user"></i>
-                        <input type="text" placeholder="Username" />
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" placeholder="Email" id="loginUserEmail" />
                     </div>
                     <div class="input-field">
                         <i class="fas fa-lock"></i>
-                        <input type="password" placeholder="Password" />
+                        <input type="password" placeholder="Password" id="loginPassword" />
                     </div>
-                    <input type="submit" value="Login" class="btn solid" />
+                    <input type="button" value="Login" class="btn solid" id="loginBtn" />
                     <p class="social-text">Or Sign in with social platforms</p>
                     <div class="social-media">
                         <a href="#" class="social-icon">
@@ -44,17 +45,17 @@
                     <h2 class="title">Sign up</h2>
                     <div class="input-field">
                         <i class="fas fa-user"></i>
-                        <input type="text" placeholder="Username" />
+                        <input type="text" placeholder="Username" id="signUpUserName" />
                     </div>
                     <div class="input-field">
                         <i class="fas fa-envelope"></i>
-                        <input type="email" placeholder="Email" />
+                        <input type="email" placeholder="Email" id="signUpEmail" />
                     </div>
                     <div class="input-field">
                         <i class="fas fa-lock"></i>
-                        <input type="password" placeholder="Password" />
+                        <input type="password" placeholder="Password" id="signUpPassword" />
                     </div>
-                    <input type="submit" class="btn" value="Sign up" />
+                    <input type="submit" class="btn" value="Sign up" id="signUpBtn" />
                     <p class="social-text">Or Sign up with social platforms</p>
                     <div class="social-media">
                         <a href="#" class="social-icon">
@@ -103,6 +104,35 @@
     </div>
 
     <script src="app.js"></script>
+    <script>
+        $(document).ready(function() {
+            $("#loginBtn").click(function() {
+                $.get("http://localhost:8080/api/v1/chat/user/login", {
+                        userEmail: $("#loginUserEmail").val(),
+                        userPassword: $("#loginPassword").val()
+                    },
+                    function(data, status) {
+                        alert("Data:" + data.data + "\nStatus:" + status);
+                    });
+            });
+            $("#signUpBtn").click(function() {
+                $.ajax({
+                    async: true,
+                    type: "post",
+                    url: "http://localhost:8080/api/v1/chat/user/signup",
+                    contentType: 'application/json;charset=UTF-8',
+                    data: JSON.stringify({
+                        "userName": $("#signUpUserName").val(),
+                        "userEmail": $("#signUpEmail").val(),
+                        "password": $("#signUpPassword").val()
+                    }),
+                    success: function(data) {
+                        alert(data.data);
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 
 </html>

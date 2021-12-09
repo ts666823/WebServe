@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Netty 聊天室</title>
+</head>
+
+<body>
+    发送消息:<input type="text" id="msgContent" />
+    <input type="button" value="发送消息" onclick="CHAT.chat()">
+    <hr /> 接收消息：
+    <div id="receiveMsg"></div>
+
+    <script type="text/javascript">
+        window.CHAT = {
+            socket: null,
+            init: function() {
+                if (window.WebSocket) {
+                    // 如果当前已连接，无需重复初始化WebSocket
+                    if (CHAT.socket != null && CHAT.socket != undefined && CHAT.socket.readyState == WebSocket.OPEN) {
+                        return false;
+                    }
+                    CHAT.socket = new WebSocket("ws://100.75.59.62:8888/ws")
+                    CHAT.socket.onopen = CHAT.wsopen,
+                        CHAT.socket.onclose = CHAT.wsclose
+                    CHAT.socket.onerror = CHAT.wserror
+                    CHAT.socket.onmessage = CHAT.wsmessage
+                } else {
+                    console.log("浏览器不支持websocket")
+                }
+            },
+            chat: function() {
+                var msgContent = document.getElementById("msgContent").value;
+                CHAT.socket.send(msgContent);
+            },
+            wsopen: function() {
+                console.log("webSocket 已连接")
+            },
+            wsmessage: function(e) {
+                console.log("接收到的消息：" + e.data)
+            },
+            wsclose: function() {
+                console.log("webSocket 已连接")
+            },
+            wserror: function() {
+                console.log("webSocket 已连接")
+            }
+        };
+        CHAT.init();
+    </script>
+</body>
+
+</html>
