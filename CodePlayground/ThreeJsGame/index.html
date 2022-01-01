@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+    <meta charset="UTF-8">
+    <title>Live Coding Playground</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta /><link rel="stylesheet" href="./style.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500&display=swap" rel="stylesheet">
+    <!-- Need prism CSS for highlight code -->
+    <link rel="stylesheet" href="../prism/css/prism.css">
+    <link rel="stylesheet" href="../prism/css/prism-live.css">
+    <script type="text/javascript" src="../../jquery.js"></script>
+</head>
+<body>
+<div class="vertical" >
+    <header id="playground_header">
+        <h1>Three.JS Game</h1>
+    </header>
+    <div class="resize-box-vertical">
+        <div class="resize-bar resize_vertical"></div>
+        <div class="dividing-line-vertical"></div>
+        <div class="content">
+            <div id="coding_area">
+                <textarea id="html" placeholder="HTML" class="prism-live language-html" style="overflow: scroll;">
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r124/three.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+<div id="instructions">
+  <div class="content">
+    <p>Stack the blocks on top of each other</p>
+    <p>Click, tap or press Space when a block is above the stack. Can you reach the blue color blocks?</p>
+    <p>Click, tap or press Space to start game</p>
+  </div>
+</div>
+<div id="results">
+  <div class="content">
+    <p>You missed the block</p>
+    <p>To reset the game press R</p>
+  </div>
+</div>
+<div id="score">0</div>
+</textarea>
+                <textarea id="css" placeholder="CSS" class="prism-live language-css" style="overflow: scroll;">@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap");
+
+body {
+  margin: 0;
+  color: white;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  cursor: pointer;
+}
+
+#instructions {
+  display: none;
+}
+
+#results,
+body:hover #instructions {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  background-color: rgba(20, 20, 20, 0.75);
+}
+
+a:visited {
+  color: inherit;
+}
+
+#results {
+  display: none;
+  cursor: default;
+}
+
+#results .content,
+#instructions .content {
+  max-width: 300px;
+  padding: 50px;
+  border-radius: 20px;
+}
+
+#results {
+}
+
+#score {
+  position: absolute;
+  color: white;
+  font-size: 3em;
+  font-weight: bold;
+  top: 30px;
+  right: 30px;
+}
+
+#youtube,
+#skillshare,
+#youtube-card,
+#skillshare-card {
+  display: none;
+  color: black;
+}
+
+@media (min-height: 425px) {
+  /** Youtube logo by https://codepen.io/alvaromontoro */
+  #youtube,
+  #skillshare {
+    z-index: 50;
+    width: 100px;
+    height: 70px;
+    position: fixed;
+    bottom: 20px;
+    transform: scale(0.8);
+    transition: transform 0.5s;
+  }
+
+  #youtube {
+    display: block;
+    background: red;
+    right: 20px;
+    border-radius: 50% / 11%;
+  }
+
+  #skillshare {
+    display: block;
+    left: 20px;
+    color: white;
+    font-size: 1.8em;
+    font-weight: extra-bold;
+    font-family: "Montserrat", sans-serif;
+    text-decoration: none;
+  }
+
+  #youtube:hover,
+  #youtube:focus {
+    transform: scale(0.9);
+    color: black;
+  }
+
+  #skillshare:hover,
+  #skillshare:focus {
+    transform: scale(0.9);
+    color: #002333;
+  }
+
+  #youtube::before {
+    content: "";
+    display: block;
+    position: absolute;
+    top: 7.5%;
+    left: -6%;
+    width: 112%;
+    height: 85%;
+    background: red;
+    border-radius: 9% / 50%;
+  }
+
+  #youtube::after {
+    content: "";
+    display: block;
+    position: absolute;
+    top: 20px;
+    left: 40px;
+    width: 45px;
+    height: 30px;
+    border: 15px solid transparent;
+    box-sizing: border-box;
+    border-left: 30px solid white;
+  }
+
+  #youtube span {
+    font-size: 0;
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+  }
+
+  #youtube:hover + #youtube-card,
+  #skillshare:hover + #skillshare-card {
+    z-index: 49;
+    display: block;
+    position: fixed;
+    bottom: 12px;
+    width: 300px;
+    background-color: white;
+  }
+
+  #youtube:hover + #youtube-card {
+    right: 10px;
+    padding: 25px 130px 25px 25px;
+  }
+
+  #skillshare:hover + #skillshare-card {
+    left: 10px;
+    padding: 25px 25px 25px 130px;
+  }
+}
+</textarea>
+                <textarea id="js" placeholder="javascript" class="prism-live language-js" style="overflow: scroll;">window.focus(); // Capture keys right away (by default focus is on editor)
+
+let camera, scene, renderer; // 全局ThreeJS
+let world; // CannonJs 世界
+let lastTime;
+let stack;
+let overhangs;
+const boxHeight = 1;
+const originalBoxSize = 3;
+let autopilot;
+let gameEnded;
+let robotPrecision;
+
+const scoreElement = document.getElementById("score");
+const instructionsElement = document.getElementById("instructions");
+const resultsElement = document.getElementById("results");
+
+init();
+
+function setRobotPrecision() {
+  robotPrecision = Math.random() * 1 - 0.5;
+}
+
+function init() {
+  autopilot = true;
+  gameEnded = false;
+  lastTime = 0;
+  stack = [];
+  overhangs = [];
+  setRobotPrecision();
+
+  // CannonJS初始化
+  world = new CANNON.World();
+  world.gravity.set(0, -10, 0); //力推动前进
+  world.broadphase = new CANNON.NaiveBroadphase();
+  world.solver.iterations = 40;
+
+  // ThreeJS初始化
+  const aspect = window.innerWidth / window.innerHeight;
+  const width = 10;
+  const height = width / aspect;
+
+  camera = new THREE.OrthographicCamera(
+    width / -2, // left
+    width / 2, // right
+    height / 2, // top
+    height / -2, // bottom
+    0, // near plane
+    100 // far plane
+  );
+
+  camera.position.set(4, 4, 4);
+  camera.lookAt(0, 0, 0);
+
+  scene = new THREE.Scene();
+
+  // 基础层
+  addLayer(0, 0, originalBoxSize, originalBoxSize);
+
+  addLayer(-10, 0, originalBoxSize, originalBoxSize, "x");
+
+  // 灯光
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+  scene.add(ambientLight);
+
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+  dirLight.position.set(10, 20, 0);
+  scene.add(dirLight);
+
+  // 渲染
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setAnimationLoop(animation);
+  document.body.appendChild(renderer.domElement);
+}
+
+function startGame() {
+  autopilot = false;
+  gameEnded = false;
+  lastTime = 0;
+  stack = [];
+  overhangs = [];
+
+  if (instructionsElement) instructionsElement.style.display = "none";
+  if (resultsElement) resultsElement.style.display = "none";
+  if (scoreElement) scoreElement.innerText = 0;
+
+  if (world) {
+    // 清空世界
+    while (world.bodies.length > 0) {
+      world.remove(world.bodies[0]);
+    }
+  }
+
+  if (scene) {
+    // 删除掉所有材料
+    while (scene.children.find((c) => c.type == "Mesh")) {
+      const mesh = scene.children.find((c) => c.type == "Mesh");
+      scene.remove(mesh);
+    }
+
+    // 基础
+    addLayer(0, 0, originalBoxSize, originalBoxSize);
+
+    // 第一层
+    addLayer(-10, 0, originalBoxSize, originalBoxSize, "x");
+  }
+
+  if (camera) {
+    // 相机位置调整
+    camera.position.set(4, 4, 4);
+    camera.lookAt(0, 0, 0);
+  }
+}
+
+function addLayer(x, z, width, depth, direction) {
+  const y = boxHeight * stack.length; // 添加更高一层Layer的盒子
+  const layer = generateBox(x, y, z, width, depth, false);
+  layer.direction = direction;
+  stack.push(layer);
+}
+
+function addOverhang(x, z, width, depth) {
+  const y = boxHeight * (stack.length - 1); // 添加同一层Layer的盒子
+  const overhang = generateBox(x, y, z, width, depth, true);
+  overhangs.push(overhang);
+}
+
+function generateBox(x, y, z, width, depth, falls) {
+  // ThreeJS
+  const geometry = new THREE.BoxGeometry(width, boxHeight, depth);
+  const color = new THREE.Color(`hsl(${30 + stack.length * 4}, 100%, 50%)`);
+  const material = new THREE.MeshLambertMaterial({ color });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.set(x, y, z);
+  scene.add(mesh);
+
+  // CannonJS
+  const shape = new CANNON.Box(
+    new CANNON.Vec3(width / 2, boxHeight / 2, depth / 2)
+  );
+  let mass = falls ? 5 : 0; // 设置质量下坠
+  mass *= width / originalBoxSize; // Reduce mass proportionately by size
+  mass *= depth / originalBoxSize; // Reduce mass proportionately by size
+  const body = new CANNON.Body({ mass, shape });
+  body.position.set(x, y, z);
+  world.addBody(body);
+
+  return {
+    threejs: mesh,
+    cannonjs: body,
+    width,
+    depth
+  };
+}
+
+function cutBox(topLayer, overlap, size, delta) {
+  const direction = topLayer.direction;
+  const newWidth = direction == "x" ? overlap : topLayer.width;
+  const newDepth = direction == "z" ? overlap : topLayer.depth;
+
+  // 更新数据
+  topLayer.width = newWidth;
+  topLayer.depth = newDepth;
+
+  // 更新 ThreeJS
+  topLayer.threejs.scale[direction] = overlap / size;
+  topLayer.threejs.position[direction] -= delta / 2;
+
+  // 更新 CannonJS 模型
+  topLayer.cannonjs.position[direction] -= delta / 2;
+
+  // 将形状替换为较小的形状（在CannonJS中，您不能简单地缩放形状）
+  const shape = new CANNON.Box(
+    new CANNON.Vec3(newWidth / 2, boxHeight / 2, newDepth / 2)
+  );
+  topLayer.cannonjs.shapes = [];
+  topLayer.cannonjs.addShape(shape);
+}
+
+// 监听事件
+window.addEventListener("mousedown", eventHandler);
+window.addEventListener("touchstart", eventHandler);
+window.addEventListener("keydown", function (event) {
+  if (event.key == " ") {
+    event.preventDefault();
+    eventHandler();
+    return;
+  }
+  if (event.key == "R" || event.key == "r") {
+    event.preventDefault();
+    startGame();
+    return;
+  }
+});
+
+function eventHandler() {
+  if (autopilot) startGame();
+  else splitBlockAndAddNextOneIfOverlaps();
+}
+
+function splitBlockAndAddNextOneIfOverlaps() {
+  if (gameEnded) return;
+
+  const topLayer = stack[stack.length - 1];
+  const previousLayer = stack[stack.length - 2];
+
+  const direction = topLayer.direction;
+
+  const size = direction == "x" ? topLayer.width : topLayer.depth;
+  const delta =
+    topLayer.threejs.position[direction] -
+    previousLayer.threejs.position[direction];
+  const overhangSize = Math.abs(delta);
+  const overlap = size - overhangSize;
+
+  if (overlap > 0) {
+    cutBox(topLayer, overlap, size, delta);
+
+    // 举高
+    const overhangShift = (overlap / 2 + overhangSize / 2) * Math.sign(delta);
+    const overhangX =
+      direction == "x"
+        ? topLayer.threejs.position.x + overhangShift
+        : topLayer.threejs.position.x;
+    const overhangZ =
+      direction == "z"
+        ? topLayer.threejs.position.z + overhangShift
+        : topLayer.threejs.position.z;
+    const overhangWidth = direction == "x" ? overhangSize : topLayer.width;
+    const overhangDepth = direction == "z" ? overhangSize : topLayer.depth;
+
+    addOverhang(overhangX, overhangZ, overhangWidth, overhangDepth);
+
+    // 下一层
+    const nextX = direction == "x" ? topLayer.threejs.position.x : -10;
+    const nextZ = direction == "z" ? topLayer.threejs.position.z : -10;
+    const newWidth = topLayer.width; // New layer has the same size as the cut top layer
+    const newDepth = topLayer.depth; // New layer has the same size as the cut top layer
+    const nextDirection = direction == "x" ? "z" : "x";
+
+    if (scoreElement) scoreElement.innerText = stack.length - 1;
+    addLayer(nextX, nextZ, newWidth, newDepth, nextDirection);
+  } else {
+    missedTheSpot();
+  }
+}
+
+function missedTheSpot() {
+  const topLayer = stack[stack.length - 1];
+
+  // 让不对齐的部分落下，顶层
+  addOverhang(
+    topLayer.threejs.position.x,
+    topLayer.threejs.position.z,
+    topLayer.width,
+    topLayer.depth
+  );
+  world.remove(topLayer.cannonjs);
+  scene.remove(topLayer.threejs);
+
+  gameEnded = true;
+  if (resultsElement && !autopilot) resultsElement.style.display = "flex";
+}
+
+function animation(time) {
+  if (lastTime) {
+    const timePassed = time - lastTime;
+    const speed = 0.008;
+
+    const topLayer = stack[stack.length - 1];
+    const previousLayer = stack[stack.length - 2];
+
+    // 如果游戏尚未结束，则顶层框应移动，并且
+    const boxShouldMove =
+      !gameEnded &&
+      (!autopilot ||
+        (autopilot &&
+          topLayer.threejs.position[topLayer.direction] <
+            previousLayer.threejs.position[topLayer.direction] +
+              robotPrecision));
+
+    if (boxShouldMove) {
+      // 设置视图位置和模型位置同步
+      topLayer.threejs.position[topLayer.direction] += speed * timePassed;
+      topLayer.cannonjs.position[topLayer.direction] += speed * timePassed;
+
+      // 如果盒子超出堆栈，则显示失败
+      if (topLayer.threejs.position[topLayer.direction] > 10) {
+        missedTheSpot();
+      }
+    } else {
+      // 下一层来了
+      if (autopilot) {
+        splitBlockAndAddNextOneIfOverlaps();
+        setRobotPrecision();
+      }
+    }
+
+    // 相机初始化高度为4
+    if (camera.position.y < boxHeight * (stack.length - 2) + 4) {
+      camera.position.y += speed * timePassed;
+    }
+
+    updatePhysics(timePassed);
+    renderer.render(scene, camera);
+  }
+  lastTime = time;
+}
+
+function updatePhysics(timePassed) {
+  world.step(timePassed / 1000); // Step the physics world
+
+  // CannonJS和ThreeJS同步位置
+  overhangs.forEach((element) => {
+    element.threejs.position.copy(element.cannonjs.position);
+    element.threejs.quaternion.copy(element.cannonjs.quaternion);
+  });
+}
+
+window.addEventListener("resize", () => {
+  // 调整位置
+  console.log("resize", window.innerWidth, window.innerHeight);
+  const aspect = window.innerWidth / window.innerHeight;
+  const width = 10;
+  const height = width / aspect;
+
+  camera.top = height / 2;
+  camera.bottom = height / -2;
+
+  // 重制渲染
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.render(scene, camera);
+});
+</textarea>
+            </div>
+        </div>
+    </div>
+    <div class="resize-box-bottom">
+        <div id="code_output">
+            <iframe id="code"></iframe>
+        </div>
+    </div>
+</div>
+<script type="text/javascript" src="./app.js"></script>
+<!-- Need prism js for highlight code -->
+<script type="text/javascript" src="../prism/js/prism.js"></script>
+<script type="text/javascript" src="../prism/js/prism-live.js"></script>
+</body>
+</html>

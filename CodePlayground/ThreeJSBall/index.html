@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+    <meta charset="UTF-8">
+    <title>Live Coding Playground</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta /><link rel="stylesheet" href="./style.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500&display=swap" rel="stylesheet">
+    <!-- Need prism CSS for highlight code -->
+    <link rel="stylesheet" href="../prism/css/prism.css">
+    <link rel="stylesheet" href="../prism/css/prism-live.css">
+    <script type="text/javascript" src="../../jquery.js"></script>
+</head>
+<body>
+<div class="vertical" >
+    <header id="playground_header">
+        <h1>Three.JS Ball</h1>
+    </header>
+    <div class="resize-box-vertical">
+        <div class="resize-bar resize_vertical"></div>
+        <div class="dividing-line-vertical"></div>
+        <div class="content">
+            <div id="coding_area">
+                <textarea id="html" placeholder="HTML" class="prism-live language-html" style="overflow: scroll;">
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+<script type="text/javascript" src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
+<h1 id="">Generating and disposing of objects</h1>
+<div id="count"><h2></h2>Balls</div>
+<div id="instructions">Click / touch + hold to drop more balls.</div>
+<canvas id="demo" />
+</textarea>
+                <textarea id="css" placeholder="CSS" class="prism-live language-css" style="overflow: scroll;">@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');
+
+* {
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+canvas {
+  left: 0;
+  margin: 0 auto;
+  position: absolute;
+  right: 0;
+  z-index: 0;
+}
+
+h1 {
+  background-color: rgba(0, 0, 0, .5);
+  top: 0;
+  color: #ddd;
+  font-family: helvetica;
+  font-size: 1.3rem;
+  left: 0;
+  margin: 0 auto;
+  padding: 8px 16px;
+  position: absolute;
+  right: 0;
+  text-align: center;
+  z-index: 1;
+}
+
+#count {
+  background-color: rgba(0, 0, 0, .5);
+  color: #fff;
+  font-family: Orbitron;
+  left: 0;
+  margin: 0 auto;
+  padding: 8px 16px;
+  position: absolute;
+  text-align: center;
+  right: 0;
+  top: 80px;
+  z-index: 1;
+}
+
+#count h2 {
+  font-size: 60px;
+  line-height: 60px;
+  margin: 0;
+}
+
+#instructions {
+  background-color: rgba(0, 0, 0, .5);
+  bottom: 0;
+  color: #fff;
+  font-family: helvetica;
+  left: 0;
+  margin: 0 auto;
+  padding: 8px 16px;
+  position: absolute;
+  right: 0;
+  text-align: center;
+  z-index: 1;
+}
+</textarea>
+                <textarea id="js" placeholder="javascript" class="prism-live language-js" style="overflow: scroll;">console.clear()
+
+class Pen {
+  #camera
+  #controls
+  #balls = []
+  #shouldDropBall = false
+  #renderer
+  #scene
+  #timeOfLastBall
+  #world
+
+  static #INITIAL_CAMERA_TARGET = new THREE.Vector3(0, 0, 0)
+  static #MIN_FORCE_FOR_CAMERA_DISTURBANCE = 5
+  static #SPACE_BAR_KEY_CODE = 32
+  static #FPS = 15
+
+  constructor () {
+    this.#scene = new THREE.Scene()
+    // 雾化效果
+    this.#scene.fog = new THREE.Fog(0x000000, -10 , 1024)
+    this.#world = new CANNON.World()
+    // 设置重力
+    this.#world.gravity.set(0, -30, 0)
+    this.#world.broadphase = new CANNON.NaiveBroadphase()
+    this.#world.defaultContactMaterial.restitution = .65
+
+    this.#camera = new THREE.PerspectiveCamera(
+      30,
+      window.innerWidth / window.innerHeight,
+      0.5,
+      10000
+    )
+    this.#camera.position.set(0, 300, -225)
+    this.#camera.lookAt(Pen.#INITIAL_CAMERA_TARGET)
+    this.#scene.add(this.#camera)
+    this.#makeLights()
+    this.#makePlatform()
+
+    // Drop first ball
+    this.#makeBall()
+
+    this.#renderer = new THREE.WebGLRenderer({ antialias: true, canvas: document.querySelector('#demo')})
+    this.#renderer.setSize(window.innerWidth, window.innerHeight)
+    this.#renderer.shadowMap.enabled = true
+    document.body.appendChild(this.#renderer.domElement)
+
+     // 让球掉落
+    const setShouldDropBall = (value, e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      this.#shouldDropBall = value
+    }
+
+    document.body.addEventListener('mousedown', setShouldDropBall.bind(this, true))
+    document.body.addEventListener('mouseup', setShouldDropBall.bind(this, false))
+    document.body.addEventListener('touchstart', setShouldDropBall.bind(this, true))
+    document.body.addEventListener('touchend', setShouldDropBall.bind(this, false))
+    window.addEventListener('selectstart', e => {
+      e.preventDefault()
+      return false
+    })
+
+    this.#addControls()
+
+    this.#renderer.setAnimationLoop(this.#render)
+  }
+
+  // 掉落球
+  #dumpBalls () {
+    const minTimeSinceLast = 10
+    const timeDiff = Date.now() - this.#timeOfLastBall
+
+    // throttle
+    if (timeDiff < minTimeSinceLast) return
+
+    this.#makeBall()
+  }
+
+
+  #addControls () {
+    this.#controls = new THREE.OrbitControls(
+      this.#camera,
+      this.#renderer.domElement
+    )
+    this.#controls.enablePan = false
+    this.#controls.minDistance = 0
+    this.#controls.maxDistance = 1500
+    this.#controls.rotateSpeed = 0.5
+    this.#controls.keyPanSpeed = 140
+    this.#controls.listenToKeyEvents(window)
+  }
+
+  // 放置球
+  #makeBall () {
+    const radius = 5
+    const sign = Math.round(Math.random()) ? 1 : -1
+    const hasBalls = this.#balls.length > 0
+    const x = hasBalls
+      ? Math.floor(Math.random() * 25) * sign
+      : 0
+    const z = hasBalls
+      ? Math.floor(Math.random() * 25) * sign
+      : 0
+    const y = 100
+    const textureLoader = new THREE.TextureLoader()
+    const geometry = new THREE.SphereGeometry(radius, 32, 16)
+    const mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(radius, 32, 16),
+      new THREE.MeshStandardMaterial({
+        bumpMap: textureLoader.load(`https://assets.codepen.io/829639/TennisBallBump.jpeg`),
+        bumpScale: .25,
+        color: 0xffffff,
+        map: textureLoader.load(`https://assets.codepen.io/829639/TennisBallColorMap.jpeg`),
+        metalness: 0,
+        opacity: 1,
+        roughness: 1,
+        transparent: true,
+      })
+    )
+
+    const shape = new CANNON.Sphere(radius)
+    const body = new CANNON.Body({
+      friction: 30,
+      mass: 1
+    })
+    body.addShape(shape)
+    body.position.set(x, y, z)
+    body.quaternion.setFromAxisAngle(
+      new CANNON.Vec3(1, 1, 1),
+      Math.floor(Math.random() * Math.PI)
+    )
+    body.addEventListener('collide', this.#shakeOnCollision)
+    this.#world.add(body)
+
+    mesh.castShadow = true
+    mesh.position.set(x, y, z)
+    mesh.body = body
+    this.#balls.push(mesh)
+    this.#scene.add(mesh)
+
+    this.#timeOfLastBall = Date.now()
+  }
+
+  #makeLights () {
+    const ambientLight = new THREE.AmbientLight(0xffffff, .5)
+    this.#scene.add(ambientLight)
+
+    const light = new THREE.DirectionalLight(0xffffff, .9)
+    const d = 200
+
+    light.position.set(d, d, 0)
+    light.castShadow = true
+    light.shadow.mapSize.width = 1024
+    light.shadow.mapSize.height = 1024
+    light.shadow.camera.left = -d
+    light.shadow.camera.right = d
+    light.shadow.camera.top = d
+    light.shadow.camera.bottom = -d
+    light.shadow.camera.far = 3 * d
+    light.shadow.camera.near = d
+    light.shadow.darkness = 0.5
+
+    this.#scene.add(light)
+  }
+
+  // 放置平板
+  #makePlatform () {
+    const size = 100
+    const textureLoader = new THREE.TextureLoader()
+    const geometry = new THREE.BoxGeometry(size, 2, size)
+    const material = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      bumpMap: textureLoader.load('https://assets.codepen.io/829639/tennis-court-bumpmap.png'),
+      map: textureLoader.load('https://assets.codepen.io/829639/tennis-court-texture.jpeg'),
+      metalness: .3,
+      roughMap: textureLoader.load('https://assets.codepen.io/829639/tennis-court-roughmap.png'),
+      roughness: 1,
+      side: THREE.DoubleSide
+    })
+    const mesh = new THREE.Mesh(geometry, material)
+    const shape = new CANNON.Box(new CANNON.Vec3(size / 2, 1, size / 2))
+    const body = new CANNON.Body({
+      linearDamping: 1,
+      mass: 0
+    })
+
+    body.position = new CANNON.Vec3(0, 0, 0)
+    body.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), Math.PI / 2)
+    body.addShape(shape)
+    this.#world.add(body)
+
+    mesh.receiveShadow = true
+    mesh.body = body
+
+    this.#scene.add(mesh)
+
+    const lineMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      metalness: .2,
+      opacity: .8,
+      roughMap: textureLoader.load('https://assets.codepen.io/829639/tennis-court-roughmap.png'),
+      roughness: 1,
+      transparent: 1,
+    })
+    const lineGeometry = new THREE.BoxGeometry(5, .1, size)
+    const line = new THREE.Mesh(lineGeometry, lineMaterial)
+    line.receiveShadow = true
+    line.position.set(0, 1, 0)
+    this.#scene.add(line)
+  }
+
+  #updateBalls = (ball, index, balls) => {
+    ball.position.copy(ball.body.position)
+    ball.quaternion.copy(ball.body.quaternion)
+
+    const damping = ball.body.position.y < 6 &&
+      ball.body.position.y > -1 ? .2 : 0
+    ball.body.angularDamping = damping
+    ball.body.linearDamping = damping
+
+    const depth = ball.position.y
+    const opacity = 1 + (depth / 50)
+    ball.material.opacity = opacity
+
+    // Dispose of balls once they've fallen far enough away
+    if (opacity <= 0) {
+      ball.material.dispose()
+      ball.geometry.dispose()
+      this.#world.removeBody(ball.body)
+      this.#scene.remove(ball)
+      this.#renderer.renderLists.dispose()
+      balls.splice(index, 1)
+    }
+  }
+  /**
+   * Move the camera target on all three axes according to the force of the collision,
+   * a little on x, more on y, and most on z,
+   * and then quickly move it back after a short timeout.
+   */
+  #shakeOnCollision = e => {
+    const force = e.contact.getImpactVelocityAlongNormal()
+
+    if (force < Pen.#MIN_FORCE_FOR_CAMERA_DISTURBANCE) return
+
+    this.#camera.lookAt(new THREE.Vector3(force / 400, force / 300, force / 200))
+    setTimeout(() => this.#camera.lookAt(Pen.#INITIAL_CAMERA_TARGET), force)
+  }
+
+  #render = () => {
+    const dt = 1 / Pen.#FPS
+    const { innerHeight, innerWidth } = window
+    this.#renderer.setSize(innerWidth, innerHeight)
+    this.#camera.aspect = innerWidth / innerHeight
+    this.#camera.updateProjectionMatrix()
+
+    this.#world.step(dt)
+
+    this.#balls.forEach(this.#updateBalls)
+
+    if (this.#shouldDropBall) this.#dumpBalls()
+
+    document.querySelector('#count h2').innerHTML = this.#balls.length.toString().padStart(3, '0')
+
+    this.#renderer.render(this.#scene, this.#camera)
+  }
+}
+
+new Pen()
+</textarea>
+            </div>
+        </div>
+    </div>
+    <div class="resize-box-bottom">
+        <div id="code_output">
+            <iframe id="code"></iframe>
+        </div>
+    </div>
+</div>
+<script type="text/javascript" src="./app.js"></script>
+<!-- Need prism js for highlight code -->
+<script type="text/javascript" src="../prism/js/prism.js"></script>
+<script type="text/javascript" src="../prism/js/prism-live.js"></script>
+</body>
+</html>

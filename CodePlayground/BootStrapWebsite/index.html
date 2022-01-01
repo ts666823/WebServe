@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+    <meta charset="UTF-8">
+    <title>Live Coding Playground</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta /><link rel="stylesheet" href="./style.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500&display=swap" rel="stylesheet">
+    <!-- Need prism CSS for highlight code -->
+    <link rel="stylesheet" href="../prism/css/prism.css">
+    <link rel="stylesheet" href="../prism/css/prism-live.css">
+    <script type="text/javascript" src="../../jquery.js"></script>
+</head>
+<body>
+<div class="vertical" >
+    <header id="playground_header">
+        <h1>Boot Strap</h1>
+    </header>
+    <div class="resize-box-vertical">
+        <div class="resize-bar resize_vertical"></div>
+        <div class="dividing-line-vertical"></div>
+        <div class="content">
+            <div id="coding_area">
+                <textarea id="html" placeholder="HTML" class="prism-live language-html" style="overflow: scroll;"><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
+<div class="wrapper">
+    <form class="form-signin">
+        <h2 class="form-signin-heading">Please login</h2>
+        <input type="text" class="form-control" name="username" placeholder="Email Address" required="" autofocus="" />
+        <input type="password" class="form-control" name="password" placeholder="Password" required=""/>
+        <button class="btn btn-lg btn-primary btn-block">Login</button>
+    </form>
+</div>
+                </textarea>
+                <textarea id="css" placeholder="CSS" class="prism-live language-css" style="overflow: scroll;">@import "bourbon";
+body {
+	background: #eee !important;
+}
+
+.wrapper {
+	margin-top: 80px;
+  margin-bottom: 80px;
+}
+
+.form-signin {
+  max-width: 380px;
+  padding: 15px 35px 45px;
+  margin: 0 auto;
+  background-color: #fff;
+  border: 1px solid rgba(0,0,0,0.1);
+
+  .form-signin-heading,
+	.checkbox {
+	  margin-bottom: 30px;
+	}
+
+	.checkbox {
+	  font-weight: normal;
+	}
+
+	.form-control {
+	  position: relative;
+	  font-size: 16px;
+	  height: auto;
+	  padding: 10px;
+		@include box-sizing(border-box);
+
+		&:focus {
+		  z-index: 2;
+		}
+	}
+
+	input[type="text"] {
+	  margin-bottom: -1px;
+	  border-bottom-left-radius: 0;
+	  border-bottom-right-radius: 0;
+	}
+
+	input[type="password"] {
+	  margin-bottom: 20px;
+	  border-top-left-radius: 0;
+	  border-top-right-radius: 0;
+	}
+}
+</textarea>
+                <textarea id="js" placeholder="javascript" class="prism-live language-js" style="overflow: scroll;"></textarea>
+            </div>
+        </div>
+    </div>
+    <div class="resize-box-bottom">
+        <div id="code_output">
+            <iframe id="code"></iframe>
+        </div>
+    </div>
+</div>
+<script type="text/javascript" src="./app.js"></script>
+<!-- Need prism js for highlight code -->
+<script type="text/javascript" src="../prism/js/prism.js"></script>
+<script type="text/javascript" src="../prism/js/prism-live.js"></script>
+</body>
+</html>

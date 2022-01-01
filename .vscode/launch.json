@@ -1,5 +1,6 @@
 {
     "configurations": [
+    
         {
             "type": "pwa-chrome",
             "name": "https://localhost:8080",
